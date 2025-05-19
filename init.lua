@@ -81,26 +81,33 @@ local oldGetUpvalue = globalMethods.getUpvalue
 local oldGetUpvalues = globalMethods.getUpvalues
 
 globalMethods.getUpvalue = function(closure, index)
-    -- CClosure kontrolü ekliyoruz (C fonksiyonlarında çalışmasın)
-    if globalMethods.isXClosure(closure) or not globalMethods.isLClosure(closure) then
+    -- Önce closure'un geçerli bir Lua fonksiyonu olup olmadığını kontrol et
+    if type(closure) ~= "function" or not globalMethods.isLClosure(closure) then
         return nil
     end
-
-    if type(closure) == "table" then
-        return oldGetUpvalue(closure.Data, index)
+    
+    -- Özel tablo durumu için kontrol
+    if type(closure) == "table" and closure.Data then
+        if type(closure.Data) == "function" and globalMethods.isLClosure(closure.Data) then
+            return oldGetUpvalue(closure.Data, index)
+        end
+        return nil
     end
 
     return oldGetUpvalue(closure, index)
 end
 
 globalMethods.getUpvalues = function(closure)
-    -- CClosure kontrolü ekliyoruz
-    if globalMethods.isXClosure(closure) or not globalMethods.isLClosure(closure) then
+    -- Aynı kontrolleri burada da yap
+    if type(closure) ~= "function" or not globalMethods.isLClosure(closure) then
         return {}
     end
-
-    if type(closure) == "table" then
-        return oldGetUpvalues(closure.Data)
+    
+    if type(closure) == "table" and closure.Data then
+        if type(closure.Data) == "function" and globalMethods.isLClosure(closure.Data) then
+            return oldGetUpvalues(closure.Data)
+        end
+        return {}
     end
 
     return oldGetUpvalues(closure)
